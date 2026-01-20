@@ -25,7 +25,22 @@ def create_access_token(data: dict):
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
-def verify_token(token: str):
+async def add_to_blacklist(token: str):
+    rd = await get_redis()
+    await rd.setex(f"blacklist:{token}", settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60, "1")
+
+
+async def is_blacklisted(token: str) -> bool:
+    rd = await get_redis()
+    return await rd.exists(f"blacklist:{token}") == 1
+
+
+async def verify_token(token: str):
+    if await is_blacklisted(token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token is blacklisted"
+        )
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         return payload
@@ -65,13 +80,3 @@ async def delete_refresh_token(refresh_token: str):
     key = f"refresh_token:{refresh_token}"
     rd = await get_redis()
     await rd.delete(key)
-
-
-async def add_to_blacklist(token: str):
-    rd = await get_redis()
-    await rd.setex(f"blacklist:{token}", settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60, "1")
-
-
-async def is_blacklisted(token: str) -> bool:
-    rd = await get_redis()
-    return await rd.exists(f"blacklist:{token}") == 1
