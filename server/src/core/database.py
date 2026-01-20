@@ -30,8 +30,10 @@ async def get_db():
         finally:
             await session.close()
 
+
 async def get_redis() -> redis.Redis:
     return redis_client
+
 
 async def close_redis():
     await redis_client.close()
