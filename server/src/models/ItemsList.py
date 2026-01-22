@@ -14,3 +14,4 @@ class UserList(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     owner = relationship("User", back_populates="lists")
+    categories = relationship("ListCategory", back_populates="parent_list", cascade="all, delete-orphan")
