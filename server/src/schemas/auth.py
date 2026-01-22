@@ -1,0 +1,14 @@
+from pydantic import BaseModel, EmailStr
+from uuid import UUID
+
+class Token(BaseModel):
+    access_token: str
+    refresh_token: str
+
+class TokenData(BaseModel):
+    user_id: UUID
+    email: EmailStr
+    username: str
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
