@@ -3,7 +3,7 @@ from sqlalchemy import Column, String, Text, Integer, ForeignKey, DateTime, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-class UserList(Base):
+class ItemsList(Base):
     __tablename__ = "items_lists"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -15,3 +15,4 @@ class UserList(Base):
 
     owner = relationship("User", back_populates="lists")
     categories = relationship("ListCategory", back_populates="parent_list", cascade="all, delete-orphan")
+    items = relationship("ListItem", back_populates="list", cascade="all, delete-orphan")

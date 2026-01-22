@@ -11,4 +11,5 @@ class ListCategory(Base):
     list_id = Column(Integer, ForeignKey("items_lists.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    parent_list = relationship("UserList", back_populates="categories")
+    parent_list = relationship("ItemsList", back_populates="categories")
+    items = relationship("ListItem", back_populates="category")
