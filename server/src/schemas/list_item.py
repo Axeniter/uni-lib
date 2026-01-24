@@ -2,22 +2,20 @@ from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 from typing import Optional
 
-class ListItemBase(BaseModel):
+
+class ListItemCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     comment: Optional[str] = None
     rating: Optional[int] = Field(None, ge=1, le=10)
-    
+    list_id: int
+    category_id: Optional[int] = None
+
     @field_validator('rating')
     @classmethod
     def validate_rating(cls, v):
         if v is not None and (v < 1 or v > 10):
             raise ValueError('Rating must be between 1 and 10')
         return v
-
-
-class ListItemCreate(ListItemBase):
-    list_id: int
-    category_id: Optional[int] = None
 
 
 class ListItemUpdate(BaseModel):
@@ -34,8 +32,11 @@ class ListItemUpdate(BaseModel):
         return v
 
 
-class ListItemResponse(ListItemBase):
+class ListItemResponse(BaseModel):
     id: int
+    title: str
+    comment: str
+    rating: int
     list_id: int
     category_id: Optional[int]
     created_at: datetime
