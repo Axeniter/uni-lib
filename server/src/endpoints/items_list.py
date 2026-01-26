@@ -24,7 +24,7 @@ from core.dependencies import get_current_user
 list_router = APIRouter()
 
 @list_router.get("/lists", response_model=List[ItemsListResponse], tags=["lists"])
-async def get_user_lists(
+async def get_user_lists_endpoint(
     skip: int = 0,
     limit: int = 100,
     user = Depends(get_current_user),
@@ -44,7 +44,7 @@ async def get_user_lists_count_endpoint(
 
 
 @list_router.get("/lists/{list_id}/full", tags=["lists"])
-async def get_list_full(
+async def get_list_full_endpoint(
     list_id: int,
     user = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
@@ -59,8 +59,61 @@ async def get_list_full(
     return db_list
 
 
+@list_router.get("/lists/{list_id}/items", response_model=List[ListItemResponse], tags=["items"])
+async def get_list_items_endpoint(
+    list_id: int,
+    user = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    db_list = await get_list_by_id(db, list_id)
+    if db_list is None:
+        raise HTTPException(status_code=404, detail="List not found")
+    
+    if db_list.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+    
+    items = await get_items_by_list_id(db, list_id)
+    return items
+
+
+@list_router.get("/lists/{list_id}/categories", response_model=List[ListCategoryResponse], tags=["categories"])
+async def get_list_categories_endpoint(
+    list_id: int,
+    skip: int = 0,
+    limit: int = 100,
+    user = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    db_list = await get_list_by_id(db, list_id)
+    if db_list is None:
+        raise HTTPException(status_code=404, detail="List not found")
+    
+    if db_list.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+    
+    categories = await get_categories_by_list_id(db, list_id, skip=skip, limit=limit)
+    return categories
+
+
+@list_router.get("/lists/{list_id}/categories/count", tags=["categories"])
+async def get_categories_count_endpoint(
+    list_id: int,
+    user = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    db_list = await get_list_by_id(db, list_id)
+    if db_list is None:
+        raise HTTPException(status_code=404, detail="List not found")
+    
+    if db_list.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+    
+    count = await get_categories_count_by_list_id(db, list_id)
+    return {"count": count}
+
+
 @list_router.get("/lists/{list_id}", response_model=ItemsListResponse, tags=["lists"])
-async def get_list(
+async def get_list_endpoint(
     list_id: int,
     user = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
@@ -83,6 +136,49 @@ async def create_list_endpoint(
 ):
     new_list = await create_list(db, list_data, user)
     return new_list
+
+
+@list_router.post("/lists/{list_id}/categories", response_model=ListCategoryResponse, tags=["categories"])
+async def create_category_endpoint(
+    list_id: int,
+    category_data: ListCategoryCreate,
+    user = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    db_list = await get_list_by_id(db, list_id)
+    if db_list is None:
+        raise HTTPException(status_code=404, detail="List not found")
+    
+    if db_list.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+    
+    category_data.list_id = list_id
+    new_category = await create_category(db, category_data)
+    return new_category
+
+
+@list_router.post("/lists/{list_id}/items", response_model=ListItemResponse, tags=["items"])
+async def create_item_endpoint(
+    list_id: int,
+    item_data: ListItemCreate,
+    user = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    db_list = await get_list_by_id(db, list_id)
+    if db_list is None:
+        raise HTTPException(status_code=404, detail="List not found")
+    
+    if db_list.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+    
+    if item_data.category_id:
+        db_category = await get_category_by_id(db, item_data.category_id)
+        if (db_category is None) or (db_category.list_id != list_id):
+            raise HTTPException(status_code=400, detail="Category not found or doesn't belong to this list")
+    
+    item_data.list_id = list_id
+    new_item = await create_item(db, item_data)
+    return new_item
 
 
 @list_router.put("/lists/{list_id}", response_model=ItemsListResponse, tags=["lists"])
@@ -126,83 +222,8 @@ async def delete_list_endpoint(
     return None
 
 
-@list_router.get("/lists/{list_id}/categories", response_model=List[ListCategoryResponse], tags=["categories"])
-async def get_list_categories(
-    list_id: int,
-    skip: int = 0,
-    limit: int = 100,
-    user = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    db_list = await get_list_by_id(db, list_id)
-    if db_list is None:
-        raise HTTPException(status_code=404, detail="List not found")
-    
-    if db_list.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Not enough permissions")
-    
-    categories = await get_categories_by_list_id(db, list_id, skip=skip, limit=limit)
-    return categories
-
-
-@list_router.get("/lists/{list_id}/categories/count", tags=["categories"])
-async def get_categories_count(
-    list_id: int,
-    user = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    db_list = await get_list_by_id(db, list_id)
-    if db_list is None:
-        raise HTTPException(status_code=404, detail="List not found")
-    
-    if db_list.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Not enough permissions")
-    
-    count = await get_categories_count_by_list_id(db, list_id)
-    return {"count": count}
-
-
-@list_router.post("/lists/{list_id}/categories", response_model=ListCategoryResponse, tags=["categories"])
-async def create_category_endpoint(
-    list_id: int,
-    category_data: ListCategoryCreate,
-    user = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    db_list = await get_list_by_id(db, list_id)
-    if db_list is None:
-        raise HTTPException(status_code=404, detail="List not found")
-    
-    if db_list.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Not enough permissions")
-    
-    category_data.list_id = list_id
-    new_category = await create_category(db, category_data)
-    return new_category
-
-
-@list_router.get("/categories/{category_id}", response_model=ListCategoryResponse, tags=["categories"])
-async def get_category(
-    category_id: int,
-    user = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    db_category = await get_category_by_id(db, category_id)
-    if db_category is None:
-        raise HTTPException(status_code=404, detail="Category not found")
-    
-    db_list = await get_list_by_id(db, db_category.list_id)
-    if not db_list:
-        raise HTTPException(status_code=404, detail="Category's list not found")
-
-    if db_list.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Not enough permissions")
-    
-    return db_category
-
-
 @list_router.get("/categories/{category_id}/full", tags=["categories"])
-async def read_category_with_items(
+async def get_category_with_items_endpoint(
     category_id: int,
     user = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
@@ -221,8 +242,28 @@ async def read_category_with_items(
     return db_category
 
 
+@list_router.get("/categories/{category_id}", response_model=ListCategoryResponse, tags=["categories"])
+async def get_category_endpoint(
+    category_id: int,
+    user = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    db_category = await get_category_by_id(db, category_id)
+    if db_category is None:
+        raise HTTPException(status_code=404, detail="Category not found")
+    
+    db_list = await get_list_by_id(db, db_category.list_id)
+    if not db_list:
+        raise HTTPException(status_code=404, detail="Category's list not found")
+
+    if db_list.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+    
+    return db_category
+
+
 @list_router.put("/categories/{category_id}", response_model=ListCategoryResponse, tags=["categories"])
-async def update_category_data(
+async def update_category_endpoint(
     category_id: int,
     category_data: ListCategoryUpdate,
     user = Depends(get_current_user),
@@ -247,7 +288,7 @@ async def update_category_data(
 
 
 @list_router.delete("/categories/{category_id}", status_code=status.HTTP_200_OK, tags=["categories"])
-async def delete_category_data(
+async def delete_category_endpoint(
     category_id: int,
     user = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
@@ -270,49 +311,8 @@ async def delete_category_data(
     return None
 
 
-@list_router.get("/lists/{list_id}/items", response_model=List[ListItemResponse], tags=["items"])
-async def get_list_items(
-    list_id: int,
-    user = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    db_list = await get_list_by_id(db, list_id)
-    if db_list is None:
-        raise HTTPException(status_code=404, detail="List not found")
-    
-    if db_list.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Not enough permissions")
-    
-    items = await get_items_by_list_id(db, list_id)
-    return items
-
-
-@list_router.post("/lists/{list_id}/items", response_model=ListItemResponse, tags=["items"])
-async def create_item_endpoint(
-    list_id: int,
-    item_data: ListItemCreate,
-    user = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    db_list = await get_list_by_id(db, list_id)
-    if db_list is None:
-        raise HTTPException(status_code=404, detail="List not found")
-    
-    if db_list.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Not enough permissions")
-    
-    if item_data.category_id:
-        db_category = await get_category_by_id(db, item_data.category_id)
-        if (db_category is None) or (db_category.list_id != list_id):
-            raise HTTPException(status_code=400, detail="Category not found or doesn't belong to this list")
-    
-    item_data.list_id = list_id
-    new_item = await create_item(db, item_data)
-    return new_item
-
-
 @list_router.get("/items/{item_id}", response_model=ListItemResponse, tags=["items"])
-async def get_item(
+async def get_item_endpoint(
     item_id: int,
     user = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
@@ -332,7 +332,7 @@ async def get_item(
 
 
 @list_router.put("/items/{item_id}", response_model=ListItemResponse, tags=["items"])
-async def update_item_data(
+async def update_item_endpoint(
     item_id: int,
     item_data: ListItemUpdate,
     user = Depends(get_current_user),
@@ -362,7 +362,7 @@ async def update_item_data(
 
 
 @list_router.delete("/items/{item_id}", status_code=status.HTTP_200_OK, tags=["items"])
-async def delete_item_data(
+async def delete_item_endpoint(
     item_id: int,
     user = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
