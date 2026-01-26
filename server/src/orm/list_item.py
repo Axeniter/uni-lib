@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import func
 from typing import List, Optional
 from models.list_item import ListItem
 from schemas.list_item import ListItemCreate, ListItemUpdate
@@ -69,3 +70,11 @@ async def delete_item(db: AsyncSession, item_id: int) -> bool:
     await db.delete(db_item)
     await db.commit()
     return True
+
+async def get_item_count_by_list_id(db: AsyncSession, list_id: int) -> int:
+    result = await db.execute(
+        select(func.count())
+        .select_from(ListItem)
+        .filter(ListItem.list_id == list_id)
+    )
+    return result.scalar()
