@@ -10,10 +10,10 @@ from orm.items_list import (
 from schemas.items_list import ItemsListCreate, ItemsListUpdate, ItemsListResponse
 from core.dependencies import get_current_user
 
-list_router = APIRouter(prefix="/lists", tags=["list"])
+list_router = APIRouter(prefix="/lists")
 
 
-@list_router.get("/", response_model=List[ItemsListResponse])
+@list_router.get("/", response_model=List[ItemsListResponse], tags=["lists"])
 async def get_user_lists(
     skip: int = 0,
     limit: int = 100,
@@ -24,7 +24,7 @@ async def get_user_lists(
     return lists
 
 
-@list_router.get("/count")
+@list_router.get("/count", tags=["lists"])
 async def get_user_lists_count_endpoint(
     user = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
@@ -33,7 +33,7 @@ async def get_user_lists_count_endpoint(
     return {"count": count}
 
 
-@list_router.get("/{list_id}/all")
+@list_router.get("/{list_id}/all", tags=["lists"])
 async def get_list_full(
     list_id: int,
     user = Depends(get_current_user),
@@ -49,7 +49,7 @@ async def get_list_full(
     return db_list
 
 
-@list_router.get("/{list_id}", response_model=ItemsListResponse)
+@list_router.get("/{list_id}", response_model=ItemsListResponse, tags=["lists"])
 async def get_list(
     list_id: int,
     user = Depends(get_current_user),
@@ -65,7 +65,7 @@ async def get_list(
     return db_list
 
 
-@list_router.post("/", response_model=ItemsListResponse)
+@list_router.post("/", response_model=ItemsListResponse, tags=["lists"])
 async def create_list_endpoint(
     list_data: ItemsListCreate,
     user = Depends(get_current_user),
@@ -75,7 +75,7 @@ async def create_list_endpoint(
     return new_list
 
 
-@list_router.put("/{list_id}", response_model=ItemsListResponse)
+@list_router.put("/{list_id}", response_model=ItemsListResponse, tags=["lists"])
 async def update_list_endpoint(
     list_id: int,
     list_data: ItemsListUpdate,
@@ -96,7 +96,7 @@ async def update_list_endpoint(
     return updated_list
 
 
-@list_router.delete("/{list_id}", status_code=status.HTTP_200_OK)
+@list_router.delete("/{list_id}", status_code=status.HTTP_200_OK, tags=["lists"])
 async def delete_list_endpoint(
     list_id: int,
     user = Depends(get_current_user),
