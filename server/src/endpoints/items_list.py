@@ -10,7 +10,7 @@ from orm.items_list import (
 from schemas.items_list import ItemsListCreate, ItemsListUpdate, ItemsListResponse
 from core.dependencies import get_current_user
 
-list_router = APIRouter(prefix="/lists", tags=["lists"])
+list_router = APIRouter(prefix="/lists", tags=["list"])
 
 
 @list_router.get("/", response_model=List[ItemsListResponse])
@@ -33,13 +33,13 @@ async def get_user_lists_count_endpoint(
     return {"count": count}
 
 
-@list_router.get("/{list_id}", response_model=ItemsListResponse)
-async def get_list(
+@list_router.get("/{list_id}/all")
+async def get_list_full(
     list_id: int,
     user = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    db_list = await get_list_by_id(db, list_id)
+    db_list = await get_list_with_items_and_categories(db, list_id)
     if db_list is None:
         raise HTTPException(status_code=404, detail="List not found")
     
@@ -49,13 +49,13 @@ async def get_list(
     return db_list
 
 
-@list_router.get("/{list_id}/all")
-async def get_list_full(
+@list_router.get("/{list_id}", response_model=ItemsListResponse)
+async def get_list(
     list_id: int,
     user = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    db_list = await get_list_with_items_and_categories(db, list_id)
+    db_list = await get_list_by_id(db, list_id)
     if db_list is None:
         raise HTTPException(status_code=404, detail="List not found")
     
