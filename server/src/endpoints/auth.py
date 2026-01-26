@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials
 from schemas.user import UserResponse, UserCreate, UserLogin
 from schemas.auth import Token, RefreshTokenRequest
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_db
 from core.security import (create_access_token, create_and_save_refresh_token, get_user_id_by_refresh_token,
-                           delete_refresh_token)
+                           delete_refresh_token, is_blacklisted, add_to_blacklist)
 from orm.user import create_user, get_user_by_email, authenticate_user, get_user_by_id
+from core.dependencies import security
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -57,3 +59,17 @@ async def refresh_token(refresh_data: RefreshTokenRequest, db: AsyncSession = De
     refresh_token = await create_and_save_refresh_token(user.id)
 
     return Token(access_token=access_token, refresh_token=refresh_token)
+
+
+@auth_router.post("/logout", status_code=status.HTTP_200_OK)
+async def logout(credentials: HTTPAuthorizationCredentials = Depends(security), db: AsyncSession = Depends(get_db)):
+    access_token = credentials.credentials
+    if await is_blacklisted(access_token):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Token already invalidated"
+        )
+    
+    await add_to_blacklist(access_token)
+
+    return {"message": "Successfully logged out"}
