@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 import jwt
 from passlib.context import CryptContext
 from fastapi import HTTPException, status
-from config import settings
+from .config import settings
 from .database import get_redis
 from uuid import UUID
 from typing import Optional

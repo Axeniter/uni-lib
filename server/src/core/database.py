@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
-from config import settings
+from .config import settings
 import redis.asyncio as redis
 
 redis_client = redis.Redis.from_url(settings.REDIS_URL, decode_responses=True)
