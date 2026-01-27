@@ -14,7 +14,7 @@ class ItemsListUpdate(BaseModel):
 class ItemsListResponse(BaseModel):
     id: int
     name: str
-    description: str
+    description: Optional[str]
     user_id: UUID
     created_at: datetime
 

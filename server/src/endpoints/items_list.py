@@ -134,7 +134,7 @@ async def create_list_endpoint(
     user = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    new_list = await create_list(db, list_data, user)
+    new_list = await create_list(db, list_data, user.id)
     return new_list
 
 

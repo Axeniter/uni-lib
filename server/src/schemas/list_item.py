@@ -35,8 +35,8 @@ class ListItemUpdate(BaseModel):
 class ListItemResponse(BaseModel):
     id: int
     title: str
-    comment: str
-    rating: int
+    comment: Optional[str]
+    rating: Optional[int]
     list_id: int
     category_id: Optional[int]
     created_at: datetime
