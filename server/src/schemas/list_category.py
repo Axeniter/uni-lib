@@ -1,8 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 class ListCategoryCreateRequest(BaseModel):
-    name: str
+    name: str = Field(..., min_length=1, max_length=100)
     order: Optional[int] = 0
 
 
@@ -11,7 +11,7 @@ class ListCategoryCreate(ListCategoryCreateRequest):
 
 
 class ListCategoryUpdate(BaseModel):
-    name: Optional[str] = None
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
     order: Optional[int] = None
 
 
