@@ -381,7 +381,7 @@ async def delete_item_endpoint(
     if not db_list:
         raise HTTPException(status_code=404, detail="Item's list not found")
 
-    if db_list.user_id != user:
+    if db_list.user_id != user.id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
     success = await delete_item(db, item_id)
