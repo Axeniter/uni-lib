@@ -17,8 +17,8 @@ from orm.list_item import (
     update_item, delete_item
 )
 from schemas.items_list import ItemsListCreate, ItemsListUpdate, ItemsListResponse
-from schemas.list_category import ListCategoryCreate, ListCategoryUpdate, ListCategoryResponse
-from schemas.list_item import ListItemCreate, ListItemUpdate, ListItemResponse
+from schemas.list_category import ListCategoryCreate, ListCategoryUpdate, ListCategoryResponse, ListCategoryCreateRequest
+from schemas.list_item import ListItemCreate, ListItemUpdate, ListItemResponse, ListItemCreateRequest
 from core.dependencies import get_current_user
 
 list_router = APIRouter()
@@ -141,7 +141,7 @@ async def create_list_endpoint(
 @list_router.post("/lists/{list_id}/categories", response_model=ListCategoryResponse, tags=["categories"])
 async def create_category_endpoint(
     list_id: int,
-    category_data: ListCategoryCreate,
+    category_request: ListCategoryCreateRequest,
     user = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -152,7 +152,10 @@ async def create_category_endpoint(
     if db_list.user_id != user.id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
-    category_data.list_id = list_id
+    category_data = ListCategoryCreate(
+        **category_request.model_dump(),
+        list_id=list_id
+    )
     new_category = await create_category(db, category_data)
     return new_category
 
@@ -160,7 +163,7 @@ async def create_category_endpoint(
 @list_router.post("/lists/{list_id}/items", response_model=ListItemResponse, tags=["items"])
 async def create_item_endpoint(
     list_id: int,
-    item_data: ListItemCreate,
+    item_request: ListItemCreateRequest,
     user = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -171,12 +174,15 @@ async def create_item_endpoint(
     if db_list.user_id != user.id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
-    if item_data.category_id:
-        db_category = await get_category_by_id(db, item_data.category_id)
+    if item_request.category_id:
+        db_category = await get_category_by_id(db, item_request.category_id)
         if (db_category is None) or (db_category.list_id != list_id):
             raise HTTPException(status_code=400, detail="Category not found or doesn't belong to this list")
     
-    item_data.list_id = list_id
+    item_data = ListItemCreate(
+        **item_request.model_dump(),
+        list_id=list_id
+    )
     new_item = await create_item(db, item_data)
     return new_item
 

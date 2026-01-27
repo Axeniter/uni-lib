@@ -7,9 +7,11 @@ class ItemsListCreate(BaseModel):
     name: str
     description: Optional[str] = None
 
+
 class ItemsListUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+
 
 class ItemsListResponse(BaseModel):
     id: int

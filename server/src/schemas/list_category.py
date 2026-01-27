@@ -1,9 +1,12 @@
 from pydantic import BaseModel
 from typing import Optional
 
-class ListCategoryCreate(BaseModel):
+class ListCategoryCreateRequest(BaseModel):
     name: str
     order: Optional[int] = 0
+
+
+class ListCategoryCreate(ListCategoryCreateRequest):
     list_id: int
 
 
