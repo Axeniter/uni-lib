@@ -1,12 +1,32 @@
 services:
-  app:
-    build: .
-    container_name: unilib-api
+  frontend:
+    build:
+      context: ./app
+      dockerfile: Dockerfile.dev
+    container_name: unilib-frontend-dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./app:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+    networks:
+      - unilib-network
+    restart: unless-stopped
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.dev
+    container_name: unilib-api-dev
     ports:
       - "8000:8000"
+    volumes:
+      - ./server:/app
     environment:
       - PYTHONPATH=/app/src:/app
-      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - ENVIRONMENT=${ENVIRONMENT}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
       - SECRET_KEY=${SECRET_KEY}
       - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
@@ -32,13 +52,13 @@ services:
 
   postgres:
     image: postgres:18-alpine
-    container_name: unilib-postgres
+    container_name: unilib-postgres-dev
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/18/main
+      - postgres_data_dev:/var/lib/postgresql/18/main
     ports:
       - "5432:5432"
     networks:
@@ -52,11 +72,11 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: unilib-redis
+    container_name: unilib-redis-dev
     ports:
       - "6379:6379"
     volumes:
-      - redis_data:/data
+      - redis_data_dev:/data
     networks:
       - unilib-network
     restart: unless-stopped
@@ -64,15 +84,14 @@ services:
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
 
 volumes:
-  postgres_data:
-  redis_data:
-  pgadmin_data:
+  postgres_data_dev:
+  redis_data_dev:
 
 networks:
   unilib-network:
