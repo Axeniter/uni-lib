@@ -52,7 +52,6 @@ async def refresh_token(refresh_data: RefreshTokenRequest, db: AsyncSession = De
     access_token = create_access_token({
         "email": user.email,
         "user_id": str(user.id),
-        "role": user.role
     })
 
     await delete_refresh_token(refresh_data.refresh_token)
